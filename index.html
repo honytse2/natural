@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#10171A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Natural Flow">
+<title>Natural Flow</title>
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icon-192.png">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<style>
+  :root{
+    --ground:#10171A;
+    --surface:#172126;
+    --surface-2:#1E2A30;
+    --chalk:#4E9A8F;
+    --chalk-dim:#2E5A54;
+    --ivory:#EDE7DA;
+    --muted:#7A8C90;
+    --faint:#41565C;
+    --ember:#B0503F;
+    --serif: ui-serif, Georgia, "Songti SC", "Noto Serif", "Times New Roman", serif;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    --beat: 450ms;
+  }
+
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:var(--ground);
+    color:var(--ivory);
+    font-family:var(--sans);
+    overscroll-behavior:none;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* faint overhead-lamp pool, like a table under a light */
+  body::before{
+    content:"";
+    position:fixed; inset:0;
+    background:radial-gradient(120% 65% at 50% 8%, rgba(78,154,143,.10), transparent 60%);
+    pointer-events:none;
+  }
+
+  #app{
+    position:relative;
+    max-width:480px;
+    margin:0 auto;
+    min-height:100%;
+    display:flex;
+    flex-direction:column;
+    padding: env(safe-area-inset-top) 22px calc(env(safe-area-inset-bottom) + 8px);
+  }
+
+  .screen{display:none; flex:1; flex-direction:column;}
+  .screen.on{display:flex;}
+
+  /* ---------- shared bits ---------- */
+  .eyebrow{
+    font-size:11px; letter-spacing:.22em; text-transform:uppercase;
+    color:var(--faint); font-weight:600;
+  }
+  .cue{
+    width:9px; height:9px; border-radius:50%;
+    background:var(--ivory); box-shadow:0 0 14px rgba(237,231,218,.35);
+    flex:none;
+  }
+  .topbar{display:flex; align-items:center; gap:10px; padding:20px 0 0;}
+
+  button{font-family:inherit; color:inherit; cursor:pointer;}
+
+  .btn{
+    width:100%; border:none; border-radius:2px;
+    background:var(--chalk); color:#08110F;
+    font-size:15px; font-weight:700; letter-spacing:.14em; text-transform:uppercase;
+    padding:20px; transition:transform .12s ease, background .2s ease;
+  }
+  .btn:active{transform:scale(.985); background:#5FB0A4;}
+  .btn.ghost{
+    background:transparent; color:var(--muted);
+    border:1px solid var(--faint); font-weight:600;
+  }
+  .btn.ghost:active{background:var(--surface-2); color:var(--ivory);}
+  .btn.ember{background:transparent; border:1px solid var(--ember); color:var(--ember);}
+  .btn.ember:active{background:rgba(176,80,63,.14);}
+
+  :focus-visible{outline:2px solid var(--chalk); outline-offset:3px;}
+
+  /* ---------- 1. ANCHOR ---------- */
+  #anchor .line{
+    flex:1;
+    display:flex; align-items:center;
+    padding:44px 0 30px;
+  }
+  #lineText{
+    font-family:var(--serif);
+    font-size:clamp(27px, 7.6vw, 35px);
+    line-height:1.42;
+    letter-spacing:-.008em;
+    color:var(--ivory);
+    font-weight:400;
+  }
+  #lineText span{
+    opacity:0;
+    animation:word .5s ease forwards;
+  }
+  @keyframes word{ from{opacity:0; filter:blur(3px);} to{opacity:1; filter:blur(0);} }
+
+  .statebar{
+    display:flex; gap:22px; align-items:baseline;
+    padding:22px 0 16px; border-top:1px solid rgba(122,140,144,.16);
+    font-size:12px; color:var(--muted); letter-spacing:.04em;
+  }
+  .statebar b{font-size:19px; color:var(--ivory); font-weight:600; font-variant-numeric:tabular-nums;}
+  .statebar .k{display:block; font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--faint); margin-bottom:3px;}
+
+  /* ---------- 2. RESET ---------- */
+  #reset{align-items:center; justify-content:center; text-align:center; position:relative;}
+  .ringwrap{
+    position:relative; width:210px; height:210px;
+    display:flex; align-items:center; justify-content:center;
+    margin-bottom:40px;
+  }
+  .ring{
+    position:absolute; inset:0; border-radius:50%;
+    border:1px solid var(--chalk-dim);
+    animation:breathe 10s ease-in-out infinite;
+  }
+  .ring:nth-child(2){animation-delay:-1.1s; opacity:.45;}
+  @keyframes breathe{
+    0%,100%{transform:scale(.62);}
+    40%{transform:scale(1);}
+    50%{transform:scale(1);}
+  }
+  .beatno{
+    font-family:var(--serif); font-size:44px; color:var(--chalk);
+    font-variant-numeric:tabular-nums;
+  }
+  #beatCue{
+    font-family:var(--serif);
+    font-size:clamp(22px,6vw,27px); line-height:1.5;
+    max-width:340px; margin:0 0 12px;
+  }
+  #beatLabel{margin-bottom:14px;}
+  .tapnote{font-size:11px; color:var(--faint); letter-spacing:.12em; text-transform:uppercase; margin-top:34px;}
+
+  /* ---------- 3. LOG ---------- */
+  .bignum{
+    font-family:var(--serif); font-size:78px; line-height:1;
+    font-variant-numeric:tabular-nums; color:var(--ivory); text-align:center;
+    margin:6px 0 2px;
+  }
+  .subq{font-size:13px; color:var(--muted); text-align:center; margin-bottom:26px;}
+  input[type=range]{
+    -webkit-appearance:none; appearance:none;
+    width:100%; height:36px; background:transparent; margin:0;
+  }
+  input[type=range]::-webkit-slider-runnable-track{
+    height:2px; background:var(--faint);
+  }
+  input[type=range]::-moz-range-track{height:2px; background:var(--faint);}
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; width:26px; height:26px; border-radius:50%;
+    background:var(--ivory); margin-top:-12px;
+    box-shadow:0 0 16px rgba(237,231,218,.4);
+  }
+  input[type=range]::-moz-range-thumb{
+    width:26px; height:26px; border:none; border-radius:50%;
+    background:var(--ivory); box-shadow:0 0 16px rgba(237,231,218,.4);
+  }
+  .ticks{display:flex; justify-content:space-between; font-size:10px; color:var(--faint); margin-top:2px;}
+
+  textarea{
+    width:100%; background:var(--surface); border:1px solid rgba(122,140,144,.18);
+    border-radius:2px; color:var(--ivory); font-family:var(--sans); font-size:15px;
+    padding:14px; resize:none; margin-top:8px;
+  }
+  textarea::placeholder{color:var(--faint);}
+  .fieldlabel{font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:var(--faint); font-weight:600; margin-top:30px;}
+
+  /* ---------- 4. TREND ---------- */
+  .dots{display:grid; grid-template-columns:repeat(10,1fr); gap:7px; margin:18px 0 4px;}
+  .dot{aspect-ratio:1; border-radius:50%; background:var(--surface-2);}
+  .dot.h{box-shadow:inset 0 0 0 1.5px var(--ember);}
+  .metrics{display:flex; gap:14px; margin-top:26px;}
+  .metric{
+    flex:1; background:var(--surface); border-radius:2px; padding:16px 14px;
+  }
+  .metric b{display:block; font-family:var(--serif); font-size:30px; font-variant-numeric:tabular-nums; margin-bottom:3px;}
+  .metric span{font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--faint);}
+  .rows{margin-top:26px; max-height:38vh; overflow-y:auto;}
+  .row{
+    display:flex; gap:14px; align-items:flex-start;
+    padding:13px 0; border-bottom:1px solid rgba(122,140,144,.11); font-size:14px;
+  }
+  .row .d{color:var(--faint); font-size:11px; letter-spacing:.06em; width:52px; flex:none; padding-top:3px;}
+  .row .s{font-family:var(--serif); font-size:18px; width:38px; flex:none; font-variant-numeric:tabular-nums;}
+  .row .n{color:var(--muted); flex:1; line-height:1.45;}
+  .empty{color:var(--faint); font-size:14px; padding:30px 0; line-height:1.6;}
+
+  /* ---------- nav ---------- */
+  nav{
+    display:flex; gap:2px; padding-top:14px;
+    border-top:1px solid rgba(122,140,144,.16);
+  }
+  nav button{
+    flex:1; background:none; border:none; padding:14px 4px 6px;
+    font-size:10px; letter-spacing:.16em; text-transform:uppercase;
+    color:var(--faint); font-weight:600;
+  }
+  nav button.on{color:var(--chalk);}
+
+  .stack{display:flex; flex-direction:column; gap:10px; width:100%;}
+  .spacer{flex:1;}
+  .toast{
+    position:fixed; left:50%; bottom:96px; transform:translateX(-50%);
+    background:var(--ivory); color:#0C1315; padding:11px 20px; border-radius:2px;
+    font-size:12px; font-weight:700; letter-spacing:.1em; text-transform:uppercase;
+    opacity:0; pointer-events:none; transition:opacity .25s ease; z-index:9;
+  }
+  .toast.on{opacity:1;}
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:.001ms !important; transition-duration:.001ms !important;}
+    #lineText span{opacity:1;}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ============ 1. ANCHOR ============ -->
+  <section class="screen on" id="anchor">
+    <div class="topbar"><i class="cue"></i><span class="eyebrow">Natural Flow</span></div>
+    <div class="line"><p id="lineText"></p></div>
+    <div class="stack">
+      <button class="btn" id="goReset">Reset to rhythm</button>
+    </div>
+    <div class="statebar">
+      <div><span class="k">Today</span><b id="sToday">—</b></div>
+      <div><span class="k">Reps today</span><b id="sReps">0</b></div>
+      <div><span class="k">7-day</span><b id="sAvg">—</b></div>
+    </div>
+  </section>
+
+  <!-- ============ 2. RESET ============ -->
+  <section class="screen" id="reset">
+    <div class="spacer"></div>
+    <div class="ringwrap">
+      <div class="ring"></div><div class="ring"></div>
+      <div class="beatno" id="beatNo">1</div>
+    </div>
+    <p class="eyebrow" id="beatLabel">Body</p>
+    <p id="beatCue">Exhale all the way out. Drop the shoulders. Let the jaw go loose.</p>
+    <p class="tapnote" id="tapNote">Tap anywhere to continue</p>
+    <div class="spacer"></div>
+    <div class="stack" id="repBox" style="display:none">
+      <button class="btn" id="repNormal">Bank the rep</button>
+      <button class="btn ember" id="repHeavy">Bank it — heavy load</button>
+      <button class="btn ghost" id="repSkip">Just passing through</button>
+    </div>
+  </section>
+
+  <!-- ============ 3. LOG ============ -->
+  <section class="screen" id="log">
+    <div class="topbar"><i class="cue"></i><span class="eyebrow" id="logDate">Today</span></div>
+    <div class="spacer"></div>
+    <div class="bignum" id="nVal">7.5</div>
+    <p class="subq">How much of today was run at your own rhythm?</p>
+    <input type="range" id="nSlide" min="0" max="10" step="0.5" value="7.5" aria-label="Natural rhythm level">
+    <div class="ticks"><span>Pulled around</span><span>Fully your own</span></div>
+
+    <p class="fieldlabel">One line, if there is one</p>
+    <textarea id="note" rows="3" placeholder="What tested it, and what held?"></textarea>
+
+    <div class="spacer"></div>
+    <div class="stack">
+      <button class="btn" id="saveDay">Save today</button>
+    </div>
+  </section>
+
+  <!-- ============ 4. TREND ============ -->
+  <section class="screen" id="trend">
+    <div class="topbar"><i class="cue"></i><span class="eyebrow">Last 30 days</span></div>
+    <div class="dots" id="dots"></div>
+    <div class="metrics">
+      <div class="metric"><b id="mAvg">—</b><span>7-day avg</span></div>
+      <div class="metric"><b id="mReps">0</b><span>Reps / 7d</span></div>
+      <div class="metric"><b id="mHeavy">0</b><span>Heavy / 7d</span></div>
+    </div>
+    <div class="rows" id="rows"></div>
+    <div class="spacer"></div>
+    <div class="stack">
+      <button class="btn ghost" id="exportBtn">Export as CSV</button>
+    </div>
+  </section>
+
+  <nav>
+    <button data-go="anchor" class="on">Anchor</button>
+    <button data-go="log">Log</button>
+    <button data-go="trend">Trend</button>
+  </nav>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---------------- storage (localStorage, memory fallback) ---------------- */
+const KEY = 'nf.v1';
+const store = (() => {
+  let mem = null, ok = true;
+  try { localStorage.setItem('__t','1'); localStorage.removeItem('__t'); }
+  catch(e){ ok = false; }
+  return {
+    read(){
+      try { return JSON.parse((ok ? localStorage.getItem(KEY) : mem) || '{}'); }
+      catch(e){ return {}; }
+    },
+    write(o){
+      const s = JSON.stringify(o);
+      try { ok ? localStorage.setItem(KEY, s) : (mem = s); } catch(e){ mem = s; }
+    }
+  };
+})();
+
+let data = store.read();
+if(!data.days) data.days = {};
+const save = () => store.write(data);
+
+/* ---------------- dates ---------------- */
+const iso = d => {
+  const t = new Date(d.getTime() - d.getTimezoneOffset()*60000);
+  return t.toISOString().slice(0,10);
+};
+const today = () => iso(new Date());
+const day = k => (data.days[k] ||= { n:null, note:'', reps:0, heavy:0 });
+
+/* ---------------- anchor lines ---------------- */
+const LINES = [
+  "用 Naturalness Maximization 迎接 Everything.",
+  "Natural Flow is the engine. Do-Re-Mi sits on top of it.",
+  "Minimum effort. Maximum reaction.",
+  "The situation sets the load. It does not set your tempo.",
+  "Same rhythm in the meeting room as at the table.",
+  "You are not performing. You are just moving.",
+  "Slow the next sentence by twenty percent.",
+  "Nothing out there has been given permission to set your pace.",
+  "If this were a frame, you would already be down on the shot.",
+  "Do good to the people you love. That is the first bottom line.",
+  "Invest fully in what you love. That is the second.",
+  "Hard situations are not interruptions to the practice. They are the practice.",
+  "Tension is effort spent on the wrong thing.",
+  "Nobody is watching the backswing. Take the pause anyway.",
+  "The mode can be 🔥 or 🟢. The rhythm underneath stays yours.",
+  "Whatever arrives, meet it at your own speed.",
+  "Forced is expensive. Natural is free.",
+  "Your father's version: enjoy the action itself, every time.",
+  "A high score today means nothing was borrowed from tomorrow.",
+  "Stillness first, then the shot. Never the other way round."
+];
+
+/* ---------------- reset beats ---------------- */
+const BEATS = [
+  { label:'Body',   cue:'Exhale all the way out. Drop the shoulders. Let the jaw go loose.' },
+  { label:'Tempo',  cue:'Slow the next sentence you say. No hurry to fill the silence.' },
+  { label:'Intent', cue:'What would you do here if there were nothing to protect?' }
+];
+
+/* ---------------- screens ---------------- */
+const $ = s => document.querySelector(s);
+const screens = [...document.querySelectorAll('.screen')];
+const navBtns = [...document.querySelectorAll('nav button')];
+
+function go(id){
+  screens.forEach(s => s.classList.toggle('on', s.id === id));
+  navBtns.forEach(b => b.classList.toggle('on', b.dataset.go === id));
+  if(id === 'anchor') renderAnchor();
+  if(id === 'log')    renderLog();
+  if(id === 'trend')  renderTrend();
+  if(id === 'reset')  startReset();
+  window.scrollTo(0,0);
+}
+navBtns.forEach(b => b.onclick = () => go(b.dataset.go));
+
+let toastT;
+function toast(msg){
+  const t = $('#toast');
+  t.textContent = msg; t.classList.add('on');
+  clearTimeout(toastT);
+  toastT = setTimeout(() => t.classList.remove('on'), 1700);
+}
+
+/* ---------------- anchor ---------------- */
+function renderAnchor(){
+  const line = LINES[Math.floor(Math.random()*LINES.length)];
+  const el = $('#lineText');
+  el.innerHTML = '';
+  line.split(' ').forEach((w,i) => {
+    const s = document.createElement('span');
+    s.textContent = w + ' ';
+    s.style.animationDelay = (i * 0.16) + 's';
+    el.appendChild(s);
+  });
+
+  const t = data.days[today()];
+  $('#sToday').textContent = (t && t.n !== null && t.n !== undefined) ? t.n : '—';
+  $('#sReps').textContent  = t ? (t.reps || 0) : 0;
+
+  const vals = last(7).map(k => data.days[k]).filter(d => d && d.n !== null && d.n !== undefined).map(d => d.n);
+  $('#sAvg').textContent = vals.length ? (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1) : '—';
+}
+
+function last(n){
+  const out = [];
+  for(let i = n-1; i >= 0; i--){
+    const d = new Date(); d.setDate(d.getDate() - i);
+    out.push(iso(d));
+  }
+  return out;
+}
+
+/* ---------------- reset routine ---------------- */
+let beatIdx = 0, beatTimer = null;
+const DUR = 11000;
+
+function startReset(){
+  beatIdx = 0;
+  $('#repBox').style.display = 'none';
+  $('#tapNote').style.visibility = 'visible';
+  showBeat();
+}
+function showBeat(){
+  const b = BEATS[beatIdx];
+  $('#beatNo').textContent = beatIdx + 1;
+  $('#beatLabel').textContent = b.label;
+  $('#beatCue').textContent = b.cue;
+  clearTimeout(beatTimer);
+  beatTimer = setTimeout(nextBeat, DUR);
+}
+function nextBeat(){
+  beatIdx++;
+  if(beatIdx < BEATS.length){ showBeat(); return; }
+  clearTimeout(beatTimer);
+  $('#beatNo').textContent = '●';
+  $('#beatLabel').textContent = 'Back in rhythm';
+  $('#beatCue').textContent = 'Carry it into the next thing.';
+  $('#tapNote').style.visibility = 'hidden';
+  $('#repBox').style.display = 'flex';
+}
+$('#reset').addEventListener('click', e => {
+  if(e.target.closest('#repBox')) return;
+  if(beatIdx < BEATS.length) nextBeat();
+});
+$('#goReset').onclick = () => go('reset');
+
+function bank(heavy){
+  const d = day(today());
+  d.reps = (d.reps || 0) + 1;
+  if(heavy) d.heavy = (d.heavy || 0) + 1;
+  save();
+  toast(heavy ? 'Heavy rep banked' : 'Rep banked');
+  go('anchor');
+}
+$('#repNormal').onclick = () => bank(false);
+$('#repHeavy').onclick  = () => bank(true);
+$('#repSkip').onclick   = () => go('anchor');
+
+/* ---------------- log ---------------- */
+function renderLog(){
+  const d = data.days[today()];
+  const v = (d && d.n !== null && d.n !== undefined) ? d.n : 7.5;
+  $('#nSlide').value = v;
+  $('#nVal').textContent = Number(v).toFixed(1);
+  $('#note').value = d ? (d.note || '') : '';
+  $('#logDate').textContent = new Date().toLocaleDateString(undefined,{weekday:'long', day:'numeric', month:'short'});
+}
+$('#nSlide').oninput = e => { $('#nVal').textContent = Number(e.target.value).toFixed(1); };
+$('#saveDay').onclick = () => {
+  const d = day(today());
+  d.n = Number($('#nSlide').value);
+  d.note = $('#note').value.trim();
+  save();
+  toast('Saved');
+  go('anchor');
+};
+
+/* ---------------- trend ---------------- */
+function renderTrend(){
+  const keys = last(30);
+  const wrap = $('#dots'); wrap.innerHTML = '';
+  keys.forEach(k => {
+    const d = data.days[k];
+    const el = document.createElement('div');
+    el.className = 'dot';
+    if(d && d.n !== null && d.n !== undefined){
+      const a = 0.18 + (d.n/10)*0.82;
+      el.style.background = `rgba(78,154,143,${a.toFixed(2)})`;
+    }
+    if(d && d.heavy) el.classList.add('h');
+    el.title = k;
+    wrap.appendChild(el);
+  });
+
+  const wk = last(7).map(k => data.days[k]).filter(Boolean);
+  const vals = wk.filter(d => d.n !== null && d.n !== undefined).map(d => d.n);
+  $('#mAvg').textContent   = vals.length ? (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1) : '—';
+  $('#mReps').textContent  = wk.reduce((a,d) => a + (d.reps||0), 0);
+  $('#mHeavy').textContent = wk.reduce((a,d) => a + (d.heavy||0), 0);
+
+  const rows = $('#rows'); rows.innerHTML = '';
+  const filled = keys.filter(k => {
+    const d = data.days[k];
+    return d && ((d.n !== null && d.n !== undefined) || d.reps);
+  }).reverse();
+
+  if(!filled.length){
+    rows.innerHTML = '<p class="empty">Nothing here yet. Bank a rep after your next reset, or score the day from the Log tab.</p>';
+    return;
+  }
+  filled.forEach(k => {
+    const d = data.days[k];
+    const r = document.createElement('div'); r.className = 'row';
+    const rep = d.reps ? `${d.reps} rep${d.reps>1?'s':''}${d.heavy?` · ${d.heavy} heavy`:''}` : '';
+    r.innerHTML = `<span class="d">${k.slice(5).replace('-','/')}</span>
+                   <span class="s">${(d.n !== null && d.n !== undefined) ? d.n : '·'}</span>
+                   <span class="n">${esc(d.note) || `<i style="opacity:.55">${rep}</i>`}${d.note && rep ? `<br><i style="opacity:.55">${rep}</i>` : ''}</span>`;
+    rows.appendChild(r);
+  });
+}
+const esc = s => (s||'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+$('#exportBtn').onclick = () => {
+  const ks = Object.keys(data.days).sort();
+  if(!ks.length){ toast('Nothing to export yet'); return; }
+  const rows = [['date','natural_rhythm','reps','heavy_reps','note']];
+  ks.forEach(k => {
+    const d = data.days[k];
+    rows.push([k, d.n ?? '', d.reps||0, d.heavy||0, '"'+(d.note||'').replace(/"/g,'""')+'"']);
+  });
+  const blob = new Blob([rows.map(r=>r.join(',')).join('\n')], {type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'natural-flow-' + today() + '.csv';
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+};
+
+/* ---------------- boot ---------------- */
+renderAnchor();
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+}
+</script>
+</body>
+</html>
