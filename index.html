@@ -195,13 +195,46 @@
   .metric span{font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--faint);}
   .rows{margin-top:26px; max-height:38vh; overflow-y:auto;}
   .row{
-    display:flex; gap:14px; align-items:flex-start;
-    padding:13px 0; border-bottom:1px solid rgba(122,140,144,.11); font-size:14px;
+    display:flex; gap:14px; align-items:flex-start; width:100%;
+    padding:13px 0; border:none; border-bottom:1px solid rgba(122,140,144,.11);
+    background:none; font-family:inherit; font-size:14px; text-align:left;
   }
+  .row:active{background:rgba(122,140,144,.07);}
   .row .d{color:var(--faint); font-size:11px; letter-spacing:.06em; width:52px; flex:none; padding-top:3px;}
   .row .s{font-family:var(--serif); font-size:18px; width:38px; flex:none; font-variant-numeric:tabular-nums;}
   .row .n{color:var(--muted); flex:1; line-height:1.45;}
+  .row .e{color:var(--faint); font-size:15px; flex:none; padding-top:1px;}
   .empty{color:var(--faint); font-size:14px; padding:30px 0; line-height:1.6;}
+  .rowhint{font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--faint); margin:10px 0 0;}
+
+  /* ---------- 5. EDIT SHEET ---------- */
+  .sheet{position:fixed; inset:0; z-index:20; display:flex; align-items:flex-end; justify-content:center;}
+  .sheet[hidden]{display:none;}
+  .veil{position:absolute; inset:0; background:rgba(8,14,16,.68);}
+  .sheetcard{
+    position:relative; width:100%; max-width:480px;
+    background:var(--surface); border-top:1px solid rgba(122,140,144,.18);
+    padding:16px 22px calc(env(safe-area-inset-bottom) + 20px);
+    max-height:94vh; overflow-y:auto;
+    animation:rise .22s ease;
+  }
+  @keyframes rise{from{transform:translateY(16px); opacity:0;} to{transform:none; opacity:1;}}
+  .sheethead{display:flex; align-items:center; justify-content:space-between; gap:12px;}
+  .sheethead .x{background:none; border:none; color:var(--muted); font-size:15px; padding:6px 2px;}
+  .sheetcard .bignum{font-size:60px; margin-top:14px;}
+  .sheetcard.cleared #edVal, .sheetcard.cleared #edSlide, .sheetcard.cleared .ticks{opacity:.32;}
+  .counters{display:flex; gap:14px; margin-top:26px;}
+  .counter{flex:1; background:var(--surface-2); border-radius:2px; padding:12px 12px 14px;}
+  .counter span{display:block; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--faint); margin-bottom:9px; text-align:center;}
+  .counter .ctl{display:flex; align-items:center; justify-content:space-between; gap:6px;}
+  .counter button{
+    width:34px; height:34px; flex:none; border:1px solid var(--faint);
+    background:none; border-radius:50%; color:var(--ivory); font-size:17px; line-height:1;
+  }
+  .counter button:active{background:var(--surface);}
+  .counter b{flex:1; text-align:center; font-family:var(--serif); font-size:24px; font-variant-numeric:tabular-nums;}
+  .btn.slim{padding:13px; font-size:11px;}
+  .sheetcard .stack{margin-top:24px;}
 
   /* ---------- nav ---------- */
   nav{
@@ -221,7 +254,7 @@
     position:fixed; left:50%; bottom:96px; transform:translateX(-50%);
     background:var(--ivory); color:#0C1315; padding:11px 20px; border-radius:2px;
     font-size:12px; font-weight:700; letter-spacing:.1em; text-transform:uppercase;
-    opacity:0; pointer-events:none; transition:opacity .25s ease; z-index:9;
+    opacity:0; pointer-events:none; transition:opacity .25s ease; z-index:30;
   }
   .toast.on{opacity:1;}
 
@@ -294,6 +327,7 @@
       <div class="metric"><b id="mHeavy">0</b><span>Heavy / 7d</span></div>
     </div>
     <div class="rows" id="rows"></div>
+    <p class="rowhint" id="rowHint" hidden>Tap a day to fix it</p>
     <div class="spacer"></div>
     <div class="stack">
       <button class="btn ghost" id="exportBtn">Export as CSV</button>
@@ -305,6 +339,49 @@
     <button data-go="log">Log</button>
     <button data-go="trend">Trend</button>
   </nav>
+</div>
+
+<!-- ============ 5. EDIT SHEET ============ -->
+<div class="sheet" id="editor" hidden>
+  <div class="veil" id="edVeil"></div>
+  <div class="sheetcard" id="edCard" role="dialog" aria-modal="true" aria-labelledby="edTitle">
+    <div class="sheethead">
+      <span class="eyebrow" id="edTitle">Edit day</span>
+      <button class="x" id="edClose" aria-label="Close without saving">Close ✕</button>
+    </div>
+
+    <div class="bignum" id="edVal">7.5</div>
+    <input type="range" id="edSlide" min="0" max="10" step="0.5" value="7.5" aria-label="Natural rhythm level">
+    <div class="ticks"><span>Pulled around</span><span>Fully your own</span></div>
+    <button class="btn ghost slim" id="edScoreToggle">Clear the score</button>
+
+    <p class="fieldlabel">One line, if there is one</p>
+    <textarea id="edNote" rows="3" placeholder="What tested it, and what held?"></textarea>
+
+    <div class="counters">
+      <div class="counter">
+        <span>Reps</span>
+        <div class="ctl">
+          <button type="button" id="edRepsDown" aria-label="One rep fewer">−</button>
+          <b id="edReps">0</b>
+          <button type="button" id="edRepsUp" aria-label="One rep more">+</button>
+        </div>
+      </div>
+      <div class="counter">
+        <span>Heavy</span>
+        <div class="ctl">
+          <button type="button" id="edHeavyDown" aria-label="One heavy rep fewer">−</button>
+          <b id="edHeavy">0</b>
+          <button type="button" id="edHeavyUp" aria-label="One heavy rep more">+</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="stack">
+      <button class="btn" id="edSave">Save changes</button>
+      <button class="btn ember" id="edDelete">Delete this day</button>
+    </div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -518,21 +595,108 @@ function renderTrend(){
     return d && ((d.n !== null && d.n !== undefined) || d.reps);
   }).reverse();
 
+  $('#rowHint').hidden = !filled.length;
   if(!filled.length){
     rows.innerHTML = '<p class="empty">Nothing here yet. Bank a rep after your next reset, or score the day from the Log tab.</p>';
     return;
   }
   filled.forEach(k => {
     const d = data.days[k];
-    const r = document.createElement('div'); r.className = 'row';
+    const r = document.createElement('button');
+    r.type = 'button'; r.className = 'row';
+    r.setAttribute('aria-label', 'Edit ' + fmtDay(k));
     const rep = d.reps ? `${d.reps} rep${d.reps>1?'s':''}${d.heavy?` · ${d.heavy} heavy`:''}` : '';
     r.innerHTML = `<span class="d">${k.slice(5).replace('-','/')}</span>
                    <span class="s">${(d.n !== null && d.n !== undefined) ? d.n : '·'}</span>
-                   <span class="n">${esc(d.note) || `<i style="opacity:.55">${rep}</i>`}${d.note && rep ? `<br><i style="opacity:.55">${rep}</i>` : ''}</span>`;
+                   <span class="n">${esc(d.note) || `<i style="opacity:.55">${rep}</i>`}${d.note && rep ? `<br><i style="opacity:.55">${rep}</i>` : ''}</span>
+                   <span class="e" aria-hidden="true">›</span>`;
+    r.onclick = () => openEditor(k);
     rows.appendChild(r);
   });
 }
 const esc = s => (s||'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ---------------- edit a past day ---------------- */
+const fmtDay = k => new Date(k + 'T00:00:00')
+  .toLocaleDateString(undefined, {weekday:'long', day:'numeric', month:'short'});
+
+let edKey = null, edScored = true, edReps = 0, edHeavy = 0, edDelArmed = false, edDelT = null;
+
+function openEditor(k){
+  const d = data.days[k] || {};
+  edKey = k;
+  edScored = (d.n !== null && d.n !== undefined);
+  edReps = d.reps || 0;
+  edHeavy = d.heavy || 0;
+  $('#edTitle').textContent = fmtDay(k) + (k === today() ? ' · today' : '');
+  $('#edSlide').value = edScored ? d.n : 7.5;
+  $('#edNote').value = d.note || '';
+  paintScore();
+  paintCounts();
+  disarmDelete();
+  $('#editor').hidden = false;
+}
+function closeEditor(){
+  $('#editor').hidden = true;
+  edKey = null;
+  disarmDelete();
+}
+function paintScore(){
+  $('#edVal').textContent = edScored ? Number($('#edSlide').value).toFixed(1) : '—';
+  $('#edCard').classList.toggle('cleared', !edScored);
+  $('#edScoreToggle').textContent = edScored ? 'Clear the score' : 'Score this day';
+}
+function paintCounts(){
+  edReps = Math.max(0, edReps);
+  edHeavy = Math.min(Math.max(0, edHeavy), edReps);
+  $('#edReps').textContent = edReps;
+  $('#edHeavy').textContent = edHeavy;
+}
+function armDelete(){
+  edDelArmed = true;
+  $('#edDelete').textContent = 'Tap again to delete';
+  clearTimeout(edDelT);
+  edDelT = setTimeout(disarmDelete, 3500);
+}
+function disarmDelete(){
+  edDelArmed = false;
+  clearTimeout(edDelT);
+  $('#edDelete').textContent = 'Delete this day';
+}
+
+$('#edSlide').oninput = () => { edScored = true; paintScore(); };
+$('#edScoreToggle').onclick = () => { edScored = !edScored; paintScore(); };
+$('#edRepsUp').onclick    = () => { edReps++;  paintCounts(); };
+$('#edRepsDown').onclick  = () => { edReps--;  paintCounts(); };
+$('#edHeavyUp').onclick   = () => { edHeavy++; paintCounts(); };
+$('#edHeavyDown').onclick = () => { edHeavy--; paintCounts(); };
+
+$('#edSave').onclick = () => {
+  if(!edKey) return;
+  const d = day(edKey);
+  d.n = edScored ? Number($('#edSlide').value) : null;
+  d.note = $('#edNote').value.trim();
+  d.reps = edReps;
+  d.heavy = edHeavy;
+  if(d.n === null && !d.note && !d.reps) delete data.days[edKey];
+  save();
+  closeEditor();
+  renderTrend();
+  toast('Day updated');
+};
+$('#edDelete').onclick = () => {
+  if(!edDelArmed){ armDelete(); return; }
+  delete data.days[edKey];
+  save();
+  closeEditor();
+  renderTrend();
+  toast('Day deleted');
+};
+$('#edClose').onclick = closeEditor;
+$('#edVeil').onclick  = closeEditor;
+document.addEventListener('keydown', e => {
+  if(e.key === 'Escape' && !$('#editor').hidden) closeEditor();
+});
 
 $('#exportBtn').onclick = () => {
   const ks = Object.keys(data.days).sort();
