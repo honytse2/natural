@@ -2,6 +2,12 @@
 
 A 35-second reset that returns you to your own rhythm, whatever the situation is doing.
 
+Two doors in:
+
+- **Reset** — the moment under load. Three beats, then bank the rep.
+- **Connect** — the moment under no load. One question about what is in the way, one tap,
+  one line, and you are out. Under fifteen seconds by design.
+
 Offline-first PWA. No account, no server, no network calls. All data stays in the browser's
 local storage on your phone.
 
@@ -37,16 +43,48 @@ that is an Apple restriction, not a bug in the app.
 > Put the icon in the bottom dock, not on page 3. The icon being visible is the reminder —
 > the app can't send you a notification, and shouldn't.
 
+## Connect
+
+Open the app at `#connect` and it lands straight on the prompt — no home screen, no tab bar,
+nothing to browse. Tap **Done**, read the line it gives back, put the phone down. The screen
+dims itself and there is deliberately no way onward from there.
+
+### Getting the reminder to fire
+
+A static site on GitHub Pages **cannot** send you a notification once it is closed. Web Push
+needs a server and a subscription; the Notification Triggers API never shipped broadly. So the
+reminder has to come from the phone, not the app:
+
+1. Set a repeating alarm in the **Clock** app, or a repeating event in **Calendar**.
+2. Point it at `https://YOUR-USERNAME.github.io/natural-flow/index.html#connect` — the
+   address is printed on the Lines tab, ready to copy.
+3. One or two a day, at irregular times, **never on the hour**. More than that and the
+   prompt becomes wallpaper.
+
+Android also exposes a long-press **Connect** shortcut on the installed app icon.
+
+## Lines
+
+The **Lines** tab is the corpus: eleven connection lines and twenty flow lines to start with,
+and anything you add yourself. Each line carries a tag — `connection` lines are what Connect
+draws from, and the Anchor screen draws from everything.
+
+Keep a line, tap any line you wrote to edit or delete it. That is the whole feature, and it is
+the important one: re-reading your own writing is what the mode is built to reproduce.
+
 ## Updating it later
 
-Edit `index.html` on GitHub, commit, then bump `CACHE = 'natural-flow-v1'` to `v2` in `sw.js`.
+Edit `index.html` on GitHub, commit, then bump `CACHE = 'natural-flow-v3'` to `v4` in `sw.js`.
 Without the version bump the service worker keeps serving the old cached copy.
 
-Personal lines live in the `LINES` array. The three reset beats live in `BEATS`.
-Both are plain text at the top of the script block — edit freely.
+Seeded lines live in the `LINES` and `CONNECT_LINES` arrays, the Connect prompts in `PROMPTS`,
+and the three reset beats in `BEATS`. All plain text near the top of the script block — edit
+freely. Lines you add in the app live in localStorage, not in the file.
 
 ## Your data
 
-- Stored under the key `nf.v1` in localStorage, on that device only.
-- **Trend → Export as CSV** gives you `date, natural_rhythm, reps, heavy_reps, note`.
+- Stored under the key `nf.v1` in localStorage, on that device only: `days` for the log,
+  `lines` for anything you kept.
+- **Trend → Export as CSV** gives you
+  `date, natural_rhythm, reps, heavy_reps, connects, note`.
 - Clearing Chrome's site data for the domain wipes it. Export every month or two.

@@ -11,6 +11,8 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icon-192.png">
 <link rel="apple-touch-icon" href="./icon-192.png">
+<!-- runs before first paint so a #connect deep link never flashes the anchor screen -->
+<script>if(location.hash === '#connect') document.documentElement.className = 'boot-connect';</script>
 <style>
   :root{
     --ground:#10171A;
@@ -97,7 +99,7 @@
     display:flex; align-items:center;
     padding:44px 0 30px;
   }
-  #lineText{
+  #lineText, .bigline{
     font-family:var(--serif);
     font-size:clamp(27px, 7.6vw, 35px);
     line-height:1.42;
@@ -105,6 +107,9 @@
     color:var(--ivory);
     font-weight:400;
   }
+  /* the longer journal lines need to come down a size or they run off the screen */
+  #lineText.sm, .bigline.sm{font-size:clamp(21px, 5.7vw, 26px); line-height:1.46;}
+  #lineText.xs, .bigline.xs{font-size:clamp(18px, 4.9vw, 22px); line-height:1.5;}
   #lineText span{
     opacity:0;
     animation:word .5s ease forwards;
@@ -223,18 +228,61 @@
   .sheethead .x{background:none; border:none; color:var(--muted); font-size:15px; padding:6px 2px;}
   .sheetcard .bignum{font-size:60px; margin-top:14px;}
   .sheetcard.cleared #edVal, .sheetcard.cleared #edSlide, .sheetcard.cleared .ticks{opacity:.32;}
-  .counters{display:flex; gap:14px; margin-top:26px;}
-  .counter{flex:1; background:var(--surface-2); border-radius:2px; padding:12px 12px 14px;}
-  .counter span{display:block; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--faint); margin-bottom:9px; text-align:center;}
-  .counter .ctl{display:flex; align-items:center; justify-content:space-between; gap:6px;}
+  .counters{display:flex; gap:9px; margin-top:26px;}
+  .counter{flex:1; min-width:0; background:var(--surface-2); border-radius:2px; padding:12px 8px 14px;}
+  .counter span{display:block; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--faint); margin-bottom:9px; text-align:center;}
+  .counter .ctl{display:flex; align-items:center; justify-content:space-between; gap:4px;}
   .counter button{
-    width:34px; height:34px; flex:none; border:1px solid var(--faint);
+    width:32px; height:32px; flex:none; border:1px solid var(--faint);
     background:none; border-radius:50%; color:var(--ivory); font-size:17px; line-height:1;
   }
   .counter button:active{background:var(--surface);}
   .counter b{flex:1; text-align:center; font-family:var(--serif); font-size:24px; font-variant-numeric:tabular-nums;}
   .btn.slim{padding:13px; font-size:11px;}
   .sheetcard .stack{margin-top:24px;}
+
+  /* ---------- 5. CONNECT ---------- */
+  #connect, #outro{align-items:center; justify-content:center; text-align:center;}
+  #connectLine{margin:0; max-width:400px;}
+  #connect .stack{max-width:340px;}
+  #outroLine{
+    margin:0; max-width:400px; color:var(--chalk);
+    animation:word .6s ease both;
+  }
+  /* the walk-away: everything fades down and nothing is left to tap */
+  body.dimmed #app{opacity:.09; transition:opacity 1.4s ease; pointer-events:none;}
+  body.dimmed::before{opacity:0; transition:opacity 1.4s ease;}
+  html.boot-connect #anchor{display:none;}
+
+  /* ---------- 6. LINES ---------- */
+  .tagpick{display:flex; gap:8px; margin-top:12px;}
+  .tagpick button{
+    flex:1; background:none; border:1px solid var(--faint); border-radius:2px;
+    color:var(--muted); padding:11px 6px;
+    font-size:10px; letter-spacing:.16em; text-transform:uppercase; font-weight:600;
+  }
+  .tagpick button.on{border-color:var(--chalk); color:var(--chalk);}
+  /* takes whatever room is left over, so the tab bar never falls off a short screen */
+  .lineList{margin-top:22px; flex:1 1 0; min-height:96px; overflow-y:auto;}
+  .lrow{
+    display:flex; gap:12px; align-items:flex-start; width:100%;
+    padding:14px 0; border:none; border-bottom:1px solid rgba(122,140,144,.11);
+    background:none; text-align:left;
+    font-family:var(--serif); font-size:16px; line-height:1.45; color:var(--ivory);
+  }
+  .lrow:active{background:rgba(122,140,144,.07);}
+  .lrow.seed{color:var(--muted); cursor:default;}
+  .lrow .lt{flex:1;}
+  .lrow .e{color:var(--faint); font-size:15px; flex:none; font-family:var(--sans); padding-top:2px;}
+  .note{
+    font-size:12px; line-height:1.6; color:var(--muted);
+    border-top:1px solid rgba(122,140,144,.16); margin-top:20px; padding-top:16px;
+  }
+  .note b{color:var(--ivory); font-weight:600;}
+  .note code{
+    display:block; margin:9px 0; padding:9px 11px; background:var(--surface);
+    color:var(--chalk); font-size:11px; word-break:break-all; user-select:all;
+  }
 
   /* ---------- nav ---------- */
   nav{
@@ -247,6 +295,8 @@
     color:var(--faint); font-weight:600;
   }
   nav button.on{color:var(--chalk);}
+  /* connect is a door in and a door out — no tab bar to wander into */
+  body.solo nav, html.boot-connect nav{display:none;}
 
   .stack{display:flex; flex-direction:column; gap:10px; width:100%;}
   .spacer{flex:1;}
@@ -273,6 +323,7 @@
     <div class="line"><p id="lineText"></p></div>
     <div class="stack">
       <button class="btn" id="goReset">Reset to rhythm</button>
+      <button class="btn" id="goConnect">Connect</button>
     </div>
     <div class="statebar">
       <div><span class="k">Today</span><b id="sToday">—</b></div>
@@ -334,10 +385,51 @@
     </div>
   </section>
 
+  <!-- ============ 5. CONNECT ============ -->
+  <section class="screen" id="connect">
+    <div class="spacer"></div>
+    <p class="bigline" id="connectLine"></p>
+    <div class="spacer"></div>
+    <div class="stack">
+      <button class="btn" id="connectDone">Done</button>
+    </div>
+  </section>
+
+  <!-- ============ 6. OUTRO ============ -->
+  <section class="screen" id="outro">
+    <div class="spacer"></div>
+    <p class="bigline" id="outroLine"></p>
+    <div class="spacer"></div>
+  </section>
+
+  <!-- ============ 7. LINES ============ -->
+  <section class="screen" id="lines">
+    <div class="topbar"><i class="cue"></i><span class="eyebrow">Lines</span></div>
+
+    <textarea id="newLine" rows="2" placeholder="A line worth keeping"></textarea>
+    <div class="tagpick" id="newTag">
+      <button type="button" data-tag="connection" class="on">Connection</button>
+      <button type="button" data-tag="flow">Flow</button>
+    </div>
+    <div class="stack" style="margin-top:10px">
+      <button class="btn" id="addLine">Keep this line</button>
+    </div>
+
+    <div class="lineList" id="lineList"></div>
+
+    <p class="note">
+      <b>Reminders.</b> Set them in the phone's own Clock or Calendar app, pointing here:
+      <code id="connectUrl">#connect</code>
+      One or two a day, at irregular times, never on the hour. A static site with no server
+      cannot send them itself.
+    </p>
+  </section>
+
   <nav>
     <button data-go="anchor" class="on">Anchor</button>
     <button data-go="log">Log</button>
     <button data-go="trend">Trend</button>
+    <button data-go="lines">Lines</button>
   </nav>
 </div>
 
@@ -375,11 +467,41 @@
           <button type="button" id="edHeavyUp" aria-label="One heavy rep more">+</button>
         </div>
       </div>
+      <div class="counter">
+        <span>Connects</span>
+        <div class="ctl">
+          <button type="button" id="edConnDown" aria-label="One connect fewer">−</button>
+          <b id="edConn">0</b>
+          <button type="button" id="edConnUp" aria-label="One connect more">+</button>
+        </div>
+      </div>
     </div>
 
     <div class="stack">
       <button class="btn" id="edSave">Save changes</button>
       <button class="btn ember" id="edDelete">Delete this day</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ LINE EDIT SHEET ============ -->
+<div class="sheet" id="lineEditor" hidden>
+  <div class="veil" id="lnVeil"></div>
+  <div class="sheetcard" role="dialog" aria-modal="true" aria-labelledby="lnTitle">
+    <div class="sheethead">
+      <span class="eyebrow" id="lnTitle">Edit line</span>
+      <button class="x" id="lnClose" aria-label="Close without saving">Close ✕</button>
+    </div>
+
+    <textarea id="lnText" rows="4" style="margin-top:14px"></textarea>
+    <div class="tagpick" id="lnTag">
+      <button type="button" data-tag="connection">Connection</button>
+      <button type="button" data-tag="flow">Flow</button>
+    </div>
+
+    <div class="stack">
+      <button class="btn" id="lnSave">Save changes</button>
+      <button class="btn ember" id="lnDelete">Delete this line</button>
     </div>
   </div>
 </div>
@@ -407,6 +529,7 @@ const store = (() => {
 
 let data = store.read();
 if(!data.days) data.days = {};
+if(!data.lines) data.lines = [];   // lines kept by hand, newest last
 const save = () => store.write(data);
 
 /* ---------------- dates ---------------- */
@@ -415,7 +538,7 @@ const iso = d => {
   return t.toISOString().slice(0,10);
 };
 const today = () => iso(new Date());
-const day = k => (data.days[k] ||= { n:null, note:'', reps:0, heavy:0 });
+const day = k => (data.days[k] ||= { n:null, note:'', reps:0, heavy:0, connects:0 });
 
 /* ---------------- anchor lines ---------------- */
 const LINES = [
@@ -441,6 +564,46 @@ const LINES = [
   "Stillness first, then the shot. Never the other way round."
 ];
 
+/* ---------------- connection lines (宇宙大連接論, June 2024) ---------------- */
+const CONNECT_LINES = [
+  "Connect everything I see and I touch — is the way to get back to my happy state.",
+  "The answer of my life is the connection with the universe.",
+  "Everything in the world can be a part of the universe.",
+  "Anything that hinders me from connecting — my ego, my hatred, caring about other people's view, fear of being blamed — should be abandoned with conscious effort.",
+  "When I am connected, even my bottle of water can become funny, beautiful, detailed, and give me so much joy.",
+  "Looking at a box of floss can be so hilarious. I found the key.",
+  "The means can always change. The end result is always the connection.",
+  "Never say never.",
+  "My happiness always comes from the internal invention of thoughts.",
+  "I see everything as a way to connect, not as an individual thing — and things become crystal clear and so much more beautiful.",
+  "The connection with the cue ball is one of my ways to connect to the universe."
+];
+
+/* what stands between me and the thing in front of me — subtraction, not effort */
+const PROMPTS = [
+  "What's between you and the thing in front of you?",
+  "Pick up the nearest object. Actually look at it.",
+  "Whose opinion are you carrying right now? Put it down.",
+  "What are you defending?",
+  "Touch something. Notice the temperature.",
+  "Is anything here actually a threat, or just a judgement?",
+  "Name three things in this room you have never really looked at."
+];
+
+/* ---------------- the corpus ----------------
+   Every line carries a tag. The anchor draws from the whole pool; connect draws
+   from the connection subset only. Kept lines join the same pool under their tag. */
+const SEEDED = [
+  ...LINES.map(t => ({ t, tag:'flow' })),
+  ...CONNECT_LINES.map(t => ({ t, tag:'connection' }))
+];
+const corpus = () => [...SEEDED, ...data.lines];
+const pool = tag => corpus().filter(l => l.tag === tag);
+const pick = arr => arr.length ? arr[Math.floor(Math.random()*arr.length)] : null;
+
+/* long journal lines need a smaller size or they run off a phone screen */
+const sizeFor = s => s.length > 120 ? 'xs' : s.length > 70 ? 'sm' : '';
+
 /* ---------------- reset beats ---------------- */
 const BEATS = [
   { label:'Body',   cue:'Exhale all the way out. Drop the shoulders. Let the jaw go loose.' },
@@ -456,10 +619,14 @@ const navBtns = [...document.querySelectorAll('nav button')];
 function go(id){
   screens.forEach(s => s.classList.toggle('on', s.id === id));
   navBtns.forEach(b => b.classList.toggle('on', b.dataset.go === id));
-  if(id === 'anchor') renderAnchor();
-  if(id === 'log')    renderLog();
-  if(id === 'trend')  renderTrend();
-  if(id === 'reset')  startReset();
+  document.body.classList.toggle('solo', id === 'connect' || id === 'outro');
+  document.documentElement.classList.remove('boot-connect');
+  if(id === 'anchor')  renderAnchor();
+  if(id === 'log')     renderLog();
+  if(id === 'trend')   renderTrend();
+  if(id === 'reset')   startReset();
+  if(id === 'lines')   renderLines();
+  if(id === 'connect') renderConnect();
   window.scrollTo(0,0);
 }
 navBtns.forEach(b => b.onclick = () => go(b.dataset.go));
@@ -472,15 +639,34 @@ function toast(msg){
   toastT = setTimeout(() => t.classList.remove('on'), 1700);
 }
 
+/* deletes ask twice — a stray tap should never cost a record */
+function twoTap(sel, label, run){
+  const btn = $(sel);
+  let armed = false, t = null;
+  const disarm = () => { armed = false; clearTimeout(t); btn.textContent = label; };
+  btn.onclick = () => {
+    if(armed){ disarm(); run(); return; }
+    armed = true;
+    btn.textContent = 'Tap again to delete';
+    clearTimeout(t);
+    t = setTimeout(disarm, 3500);
+  };
+  disarm();
+  return disarm;
+}
+
 /* ---------------- anchor ---------------- */
 function renderAnchor(){
-  const line = LINES[Math.floor(Math.random()*LINES.length)];
+  const line = (pick(corpus()) || { t:'' }).t;
   const el = $('#lineText');
+  el.className = sizeFor(line);
   el.innerHTML = '';
-  line.split(' ').forEach((w,i) => {
+  const words = line.split(' ');
+  const step = Math.min(0.16, 2.4 / words.length);   // long lines land in the same window
+  words.forEach((w,i) => {
     const s = document.createElement('span');
     s.textContent = w + ' ';
-    s.style.animationDelay = (i * 0.16) + 's';
+    s.style.animationDelay = (i * step) + 's';
     el.appendChild(s);
   });
 
@@ -547,6 +733,51 @@ $('#repNormal').onclick = () => bank(false);
 $('#repHeavy').onclick  = () => bank(true);
 $('#repSkip').onclick   = () => go('anchor');
 
+/* ---------------- connect ----------------
+   The whole mode is: one obstruction check, one tap, one line, gone.
+   Anything that makes it longer is a bug. */
+let outroT = null, connectDone = false;
+
+function setLine(sel, text){
+  const el = $(sel);
+  el.className = 'bigline ' + sizeFor(text);
+  el.textContent = text;
+}
+
+function renderConnect(){
+  clearTimeout(outroT);
+  connectDone = false;
+  document.body.classList.remove('dimmed');
+  setLine('#connectLine', pick(PROMPTS));
+}
+
+$('#goConnect').onclick = () => go('connect');
+
+$('#connectDone').onclick = () => {
+  if(connectDone) return;
+  connectDone = true;
+
+  const d = day(today());
+  d.connects = (d.connects || 0) + 1;
+  save();
+
+  const line = pick(pool('connection'));
+  setLine('#outroLine', line ? line.t : '');
+  go('outro');
+
+  // put the phone down: no menu, no next step, nothing left to tap
+  outroT = setTimeout(() => document.body.classList.add('dimmed'), 1100);
+
+  // drop the hash so the next shortcut tap re-enters cleanly
+  try { history.replaceState(null, '', location.pathname + location.search); } catch(e){}
+};
+
+/* deep link: #connect from an alarm, a calendar entry or a home-screen shortcut */
+function routeHash(){
+  if(location.hash === '#connect') go('connect');
+}
+window.addEventListener('hashchange', routeHash);
+
 /* ---------------- log ---------------- */
 function renderLog(){
   const d = data.days[today()];
@@ -592,7 +823,7 @@ function renderTrend(){
   const rows = $('#rows'); rows.innerHTML = '';
   const filled = keys.filter(k => {
     const d = data.days[k];
-    return d && ((d.n !== null && d.n !== undefined) || d.reps);
+    return d && ((d.n !== null && d.n !== undefined) || d.reps || d.connects);
   }).reverse();
 
   $('#rowHint').hidden = !filled.length;
@@ -605,7 +836,10 @@ function renderTrend(){
     const r = document.createElement('button');
     r.type = 'button'; r.className = 'row';
     r.setAttribute('aria-label', 'Edit ' + fmtDay(k));
-    const rep = d.reps ? `${d.reps} rep${d.reps>1?'s':''}${d.heavy?` · ${d.heavy} heavy`:''}` : '';
+    const bits = [];
+    if(d.reps) bits.push(`${d.reps} rep${d.reps>1?'s':''}${d.heavy?` · ${d.heavy} heavy`:''}`);
+    if(d.connects) bits.push(`${d.connects} connect${d.connects>1?'s':''}`);
+    const rep = bits.join(' · ');
     r.innerHTML = `<span class="d">${k.slice(5).replace('-','/')}</span>
                    <span class="s">${(d.n !== null && d.n !== undefined) ? d.n : '·'}</span>
                    <span class="n">${esc(d.note) || `<i style="opacity:.55">${rep}</i>`}${d.note && rep ? `<br><i style="opacity:.55">${rep}</i>` : ''}</span>
@@ -620,7 +854,7 @@ const esc = s => (s||'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&
 const fmtDay = k => new Date(k + 'T00:00:00')
   .toLocaleDateString(undefined, {weekday:'long', day:'numeric', month:'short'});
 
-let edKey = null, edScored = true, edReps = 0, edHeavy = 0, edDelArmed = false, edDelT = null;
+let edKey = null, edScored = true, edReps = 0, edHeavy = 0, edConn = 0;
 
 function openEditor(k){
   const d = data.days[k] || {};
@@ -628,6 +862,7 @@ function openEditor(k){
   edScored = (d.n !== null && d.n !== undefined);
   edReps = d.reps || 0;
   edHeavy = d.heavy || 0;
+  edConn = d.connects || 0;
   $('#edTitle').textContent = fmtDay(k) + (k === today() ? ' · today' : '');
   $('#edSlide').value = edScored ? d.n : 7.5;
   $('#edNote').value = d.note || '';
@@ -649,19 +884,10 @@ function paintScore(){
 function paintCounts(){
   edReps = Math.max(0, edReps);
   edHeavy = Math.min(Math.max(0, edHeavy), edReps);
+  edConn = Math.max(0, edConn);
   $('#edReps').textContent = edReps;
   $('#edHeavy').textContent = edHeavy;
-}
-function armDelete(){
-  edDelArmed = true;
-  $('#edDelete').textContent = 'Tap again to delete';
-  clearTimeout(edDelT);
-  edDelT = setTimeout(disarmDelete, 3500);
-}
-function disarmDelete(){
-  edDelArmed = false;
-  clearTimeout(edDelT);
-  $('#edDelete').textContent = 'Delete this day';
+  $('#edConn').textContent = edConn;
 }
 
 $('#edSlide').oninput = () => { edScored = true; paintScore(); };
@@ -670,6 +896,8 @@ $('#edRepsUp').onclick    = () => { edReps++;  paintCounts(); };
 $('#edRepsDown').onclick  = () => { edReps--;  paintCounts(); };
 $('#edHeavyUp').onclick   = () => { edHeavy++; paintCounts(); };
 $('#edHeavyDown').onclick = () => { edHeavy--; paintCounts(); };
+$('#edConnUp').onclick    = () => { edConn++;  paintCounts(); };
+$('#edConnDown').onclick  = () => { edConn--;  paintCounts(); };
 
 $('#edSave').onclick = () => {
   if(!edKey) return;
@@ -678,33 +906,125 @@ $('#edSave').onclick = () => {
   d.note = $('#edNote').value.trim();
   d.reps = edReps;
   d.heavy = edHeavy;
-  if(d.n === null && !d.note && !d.reps) delete data.days[edKey];
+  d.connects = edConn;
+  if(d.n === null && !d.note && !d.reps && !d.connects) delete data.days[edKey];
   save();
   closeEditor();
   renderTrend();
   toast('Day updated');
 };
-$('#edDelete').onclick = () => {
-  if(!edDelArmed){ armDelete(); return; }
+const disarmDelete = twoTap('#edDelete', 'Delete this day', () => {
   delete data.days[edKey];
   save();
   closeEditor();
   renderTrend();
   toast('Day deleted');
-};
+});
 $('#edClose').onclick = closeEditor;
 $('#edVeil').onclick  = closeEditor;
+
+/* ---------------- lines ----------------
+   The corpus is a journal, not a settings list. Re-reading it is the whole point,
+   so kept lines and seeded ones sit in the same plain list. */
+function tagPicker(sel, onPick){
+  const btns = [...document.querySelectorAll(sel + ' button')];
+  btns.forEach(b => b.onclick = () => {
+    btns.forEach(o => o.classList.toggle('on', o === b));
+    if(onPick) onPick(b.dataset.tag);
+  });
+  return {
+    get(){ return (btns.find(b => b.classList.contains('on')) || btns[0]).dataset.tag; },
+    set(tag){ btns.forEach(b => b.classList.toggle('on', b.dataset.tag === tag)); }
+  };
+}
+const newTag = tagPicker('#newTag');
+const lnTag  = tagPicker('#lnTag');
+
+function renderLines(){
+  $('#connectUrl').textContent = location.origin === 'null'
+    ? '#connect'
+    : location.origin + location.pathname + '#connect';
+
+  const list = $('#lineList');
+  list.innerHTML = '';
+  const mine = [...data.lines].reverse();          // newest first
+  mine.forEach(l => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'lrow';
+    b.setAttribute('aria-label', 'Edit line');
+    b.innerHTML = `<span class="lt">${esc(l.t)}</span><span class="e" aria-hidden="true">›</span>`;
+    b.onclick = () => openLine(l.id);
+    list.appendChild(b);
+  });
+  SEEDED.forEach(l => {
+    const r = document.createElement('div');
+    r.className = 'lrow seed';
+    r.innerHTML = `<span class="lt">${esc(l.t)}</span>`;
+    list.appendChild(r);
+  });
+}
+
+$('#addLine').onclick = () => {
+  const t = $('#newLine').value.trim();
+  if(!t){ toast('Nothing to keep yet'); return; }
+  data.lines.push({ id: Date.now() + '.' + Math.random().toString(36).slice(2,7), t, tag: newTag.get() });
+  save();
+  $('#newLine').value = '';
+  renderLines();
+  $('#lineList').scrollTop = 0;
+  toast('Kept');
+};
+
+let lnId = null;
+function openLine(id){
+  const l = data.lines.find(x => x.id === id);
+  if(!l) return;
+  lnId = id;
+  $('#lnText').value = l.t;
+  lnTag.set(l.tag);
+  disarmLineDelete();
+  $('#lineEditor').hidden = false;
+}
+function closeLine(){
+  $('#lineEditor').hidden = true;
+  lnId = null;
+  disarmLineDelete();
+}
+$('#lnSave').onclick = () => {
+  const l = data.lines.find(x => x.id === lnId);
+  if(!l) return;
+  const t = $('#lnText').value.trim();
+  if(!t){ toast('A line cannot be empty'); return; }
+  l.t = t;
+  l.tag = lnTag.get();
+  save();
+  closeLine();
+  renderLines();
+  toast('Line updated');
+};
+const disarmLineDelete = twoTap('#lnDelete', 'Delete this line', () => {
+  data.lines = data.lines.filter(x => x.id !== lnId);
+  save();
+  closeLine();
+  renderLines();
+  toast('Line deleted');
+});
+$('#lnClose').onclick = closeLine;
+$('#lnVeil').onclick  = closeLine;
+
 document.addEventListener('keydown', e => {
-  if(e.key === 'Escape' && !$('#editor').hidden) closeEditor();
+  if(e.key !== 'Escape') return;
+  if(!$('#editor').hidden) closeEditor();
+  else if(!$('#lineEditor').hidden) closeLine();
 });
 
 $('#exportBtn').onclick = () => {
   const ks = Object.keys(data.days).sort();
   if(!ks.length){ toast('Nothing to export yet'); return; }
-  const rows = [['date','natural_rhythm','reps','heavy_reps','note']];
+  const rows = [['date','natural_rhythm','reps','heavy_reps','connects','note']];
   ks.forEach(k => {
     const d = data.days[k];
-    rows.push([k, d.n ?? '', d.reps||0, d.heavy||0, '"'+(d.note||'').replace(/"/g,'""')+'"']);
+    rows.push([k, d.n ?? '', d.reps||0, d.heavy||0, d.connects||0, '"'+(d.note||'').replace(/"/g,'""')+'"']);
   });
   const blob = new Blob([rows.map(r=>r.join(',')).join('\n')], {type:'text/csv'});
   const a = document.createElement('a');
@@ -715,7 +1035,9 @@ $('#exportBtn').onclick = () => {
 };
 
 /* ---------------- boot ---------------- */
-renderAnchor();
+if(location.hash === '#connect') go('connect');
+else { document.documentElement.classList.remove('boot-connect'); renderAnchor(); }
+
 if('serviceWorker' in navigator){
   window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(()=>{}));
 }
