@@ -252,6 +252,7 @@
   /* the walk-away: everything fades down and nothing is left to tap */
   body.dimmed #app{opacity:.09; transition:opacity 1.4s ease; pointer-events:none;}
   body.dimmed::before{opacity:0; transition:opacity 1.4s ease;}
+  #app, body::before{transition:opacity .5s ease;}   /* comes back quicker than it left */
   html.boot-connect #anchor{display:none;}
 
   /* ---------- 6. LINES ---------- */
@@ -736,7 +737,13 @@ $('#repSkip').onclick   = () => go('anchor');
 /* ---------------- connect ----------------
    The whole mode is: one obstruction check, one tap, one line, gone.
    Anything that makes it longer is a bug. */
-let outroT = null, connectDone = false;
+let outroT = null, restT = null, connectDone = false;
+
+/* installed on the home screen, or just a browser tab? */
+const installed = () =>
+  (matchMedia && (matchMedia('(display-mode: standalone)').matches ||
+                  matchMedia('(display-mode: fullscreen)').matches)) ||
+  navigator.standalone === true;
 
 function setLine(sel, text){
   const el = $(sel);
@@ -745,11 +752,24 @@ function setLine(sel, text){
 }
 
 function renderConnect(){
-  clearTimeout(outroT);
+  clearTimeout(outroT); clearTimeout(restT);
   connectDone = false;
   document.body.classList.remove('dimmed');
   setLine('#connectLine', pick(PROMPTS));
 }
+
+/* The session is over, but the app has to be usable the next time it is opened.
+   A phone does not cold-start a backgrounded app, so coming back to it resets. */
+function endSession(){
+  if(!connectDone) return;
+  connectDone = false;
+  clearTimeout(outroT); clearTimeout(restT);
+  document.body.classList.remove('dimmed');
+  go('anchor');
+}
+document.addEventListener('visibilitychange', () => {
+  if(document.visibilityState === 'visible') endSession();
+});
 
 $('#goConnect').onclick = () => go('connect');
 
@@ -766,7 +786,13 @@ $('#connectDone').onclick = () => {
   go('outro');
 
   // put the phone down: no menu, no next step, nothing left to tap
-  outroT = setTimeout(() => document.body.classList.add('dimmed'), 1100);
+  outroT = setTimeout(() => {
+    document.body.classList.add('dimmed');
+    // A browser tab is not something you can be pushed out of, so there the screen
+    // rests and then goes back to the anchor rather than sitting there looking dead.
+    // Installed on the home screen it stays ended, as it should.
+    if(!installed()) restT = setTimeout(endSession, 3000);
+  }, 1100);
 
   // drop the hash so the next shortcut tap re-enters cleanly
   try { history.replaceState(null, '', location.pathname + location.search); } catch(e){}
