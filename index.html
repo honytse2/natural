@@ -739,12 +739,6 @@ $('#repSkip').onclick   = () => go('anchor');
    Anything that makes it longer is a bug. */
 let outroT = null, restT = null, connectDone = false;
 
-/* installed on the home screen, or just a browser tab? */
-const installed = () =>
-  (matchMedia && (matchMedia('(display-mode: standalone)').matches ||
-                  matchMedia('(display-mode: fullscreen)').matches)) ||
-  navigator.standalone === true;
-
 function setLine(sel, text){
   const el = $(sel);
   el.className = 'bigline ' + sizeFor(text);
@@ -788,10 +782,10 @@ $('#connectDone').onclick = () => {
   // put the phone down: no menu, no next step, nothing left to tap
   outroT = setTimeout(() => {
     document.body.classList.add('dimmed');
-    // A browser tab is not something you can be pushed out of, so there the screen
-    // rests and then goes back to the anchor rather than sitting there looking dead.
-    // Installed on the home screen it stays ended, as it should.
-    if(!installed()) restT = setTimeout(endSession, 3000);
+    // Nothing on the web can close itself and hand you back to the phone's home
+    // screen, so the screen rests for a beat and then goes back to the anchor.
+    // If you have already looked away, you never see it happen.
+    restT = setTimeout(endSession, 3000);
   }, 1100);
 
   // drop the hash so the next shortcut tap re-enters cleanly

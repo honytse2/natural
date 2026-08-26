@@ -49,10 +49,12 @@ Open the app at `#connect` and it lands straight on the prompt — no home scree
 nothing to browse. Tap **Done**, read the line it gives back, put the phone down. The screen
 dims itself and there is deliberately no way onward from there.
 
-Installed on the home screen it stays ended, and reopening the app starts you back at the
-anchor. In an ordinary browser tab there is nothing to be pushed out of, so after the screen
-has rested a few seconds it returns to the anchor by itself rather than sitting there looking
-crashed.
+Nothing on the web can close itself and hand you back to the phone's home screen — there is no
+API for it, the same way there is no way to send yourself a notification. So the walk-away is
+as close as the platform allows: the line rests, the screen goes dark and dead for a few
+seconds with nothing to tap, and then the app quietly returns to the anchor. If you have
+already put the phone down, you never see it happen. Coming back to a backgrounded app resets
+it the same way, so it is always usable when you open it.
 
 ### Getting the reminder to fire
 
@@ -79,7 +81,7 @@ the important one: re-reading your own writing is what the mode is built to repr
 
 ## Updating it later
 
-Edit `index.html` on GitHub, commit, then bump `CACHE = 'natural-flow-v4'` to `v5` in `sw.js`.
+Edit `index.html` on GitHub, commit, then bump `CACHE = 'natural-flow-v5'` to `v6` in `sw.js`.
 Without the version bump the service worker keeps serving the old cached copy.
 
 Seeded lines live in the `LINES` and `CONNECT_LINES` arrays, the Connect prompts in `PROMPTS`,
