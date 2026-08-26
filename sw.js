@@ -1,4 +1,4 @@
-const CACHE = 'natural-flow-v4';
+const CACHE = 'natural-flow-v5';
 const ASSETS = [
   './',
   './index.html',
